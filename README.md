@@ -2,12 +2,6 @@
 ---
 Info coming
 
-
-
-
-
-
-
 #### Parts list
 
 * CUI AMT10E3-V capacitive encoders - 2 PCS
@@ -18,3 +12,6 @@ Info coming
 * 8 mm bore pillow bearing 4 PCS
 * Teensy 4.1 MCU 1 PCS
 * Teensy 3.2 MCU 3 PCS
+
+#### Notes
+* Slip ring for lidar
