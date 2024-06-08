@@ -10,7 +10,7 @@ n1 = 22.2/18*n0;         % No load rotor speed - Assuming complete linearity
                          % adjusting for 22.2 V
 n0*1/N_gbox              % No load speed of output shaft
 N_belt = 4;
-d = 0.2;
+d = 0.30;
 o = pi*d;
 n1*1/N_gbox*N_belt
 v_lin = n0*1/N_gbox*N_belt*o
