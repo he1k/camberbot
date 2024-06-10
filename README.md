@@ -12,6 +12,4 @@ Info coming
 * 8 mm bore pillow bearing 4 PCS
 * Teensy 4.1 MCU 1 PCS
 * Teensy 3.2 MCU 3 PCS
-
-#### Notes
-* Slip ring for lidar
+* Ender 3 v2 display - DMT48270C043_04WNZ11
