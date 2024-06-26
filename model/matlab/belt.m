@@ -1,0 +1,15 @@
+pitch = 10;
+N_big = 12;
+N_small = 12;
+L = 250;
+d = 2*20/pi;
+D = 2*80/pi;
+L = 260;
+d = pitch*15/pi
+D = pitch*15/pi
+C = (2*L-pi*(D+d)+sqrt((2*L-pi*(D+d))^2-8*(D-d)^2))/8
+% t = 10;
+% n = 6;
+% do = t*n/pi;
+% % x/360*do = t
+% x = t/(do*360)
