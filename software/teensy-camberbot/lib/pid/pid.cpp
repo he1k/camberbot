@@ -1,22 +1,25 @@
 #include "pid.h"
 #include <Arduino.h>
+// Constructor
 PID::PID()
 {
 
 }
-
-void PID::begin(float Ts, float Kp, float tau_i, float tau_d, float alpha, float lim)
+// Set controller values
+void PID::begin(float Ts, float Kp, float tau_i, float tau_d, float alpha, float lim, bool en_lim)
 {
   this->_Ts = Ts;
   this->_Kp = Kp;
   this->_tau_i = tau_i;
   this->_tau_d = tau_d;
-  this->_b[0] =  0.5*Kp*(Ts + 2.0*tau_d)*(Ts + 2.0*tau_i);
-  this->_b[1] = 0.5*Kp*(Ts - 2.0*tau_d)*(Ts + 2.0*tau_i) + 0.5*Kp*(Ts + 2.0*tau_d)*(Ts - 2.0*tau_i);
-  this->_b[2] = 0.5*Kp*(Ts - 2.0*tau_d)*(Ts - 2.0*tau_i);
+  this->_alpha = alpha;
   this->_a[0] = tau_i*(Ts + 2.0*alpha*tau_d);
-  this->_a[1] = tau_i*(Ts - 2.0*alpha*tau_d) - 1.0*tau_i*(Ts + 2.0*alpha*tau_d);
-  this->_a[2] = -1.0*tau_i*(Ts - 2.0*alpha*tau_d);
+  this->_b[0] = (0.5*Kp*(Ts + 2.0*tau_d)*(Ts + 2.0*tau_i)) / this->_a[0];
+  this->_b[1] = (0.5*Kp*(Ts - 2.0*tau_d)*(Ts + 2.0*tau_i) + 0.5*Kp*(Ts + 2.0*tau_d)*(Ts - 2.0*tau_i)) / this->_a[0];
+  this->_b[2] = (0.5*Kp*(Ts - 2.0*tau_d)*(Ts - 2.0*tau_i)) / this->_a[0];
+  this->_a[1] = (tau_i*(Ts - 2.0*alpha*tau_d) - 1.0*tau_i*(Ts + 2.0*alpha*tau_d)) / this->_a[0];
+  this->_a[2] = (-1.0*tau_i*(Ts - 2.0*alpha*tau_d)) / this->_a[0];
+  this->_a[0] = 1; // Filter is normalized now, so set to 1
   this->_e[0] = 0;
   this->_e[1] = 0;
   this->_e[2] = 0;
@@ -27,20 +30,25 @@ void PID::begin(float Ts, float Kp, float tau_i, float tau_d, float alpha, float
   if(lim < 0) {
     this->_lim = fabs(this->_lim);
   }
+  this->_en_lim = en_lim;
 }
+// Update controller
 float PID::update(float r, float m)
 {
   // Calculate e(t)
   this->_e[0] = r-m;
-  // Calculate u(t)
-  this->_u[0] = 1/this->_a[0]*(this->_b[0]*this->_e[0] + this->_b[1]*this->_e[1] + this->_b[2]*this->_e[2] - this->_a[1]*this->_u[1] - this->_a[2]*this->_u[2]);
+  // Calculate u(t) using direct implementation
+  this->_u[0] = this->_b[0]*this->_e[0] + this->_b[1]*this->_e[1] + this->_b[2]*this->_e[2] - this->_a[1]*this->_u[1] - this->_a[2]*this->_u[2];
   // Clamp u(t)
-  if(this->_u[0] > this->_lim)
+  if(this->_en_lim)
   {
-    this->_u[0] = this->_lim;
-  }else if(this->_u[0] < -this->_lim)
-  {
-    this->_u[0] = -this->_lim;
+    if(this->_u[0] > this->_lim)
+    {
+      this->_u[0] = this->_lim;
+    }else if(this->_u[0] < -this->_lim)
+    {
+      this->_u[0] = -this->_lim;
+    }
   }
   // Update filter
   this->_u[2] = this->_u[1];
@@ -49,29 +57,35 @@ float PID::update(float r, float m)
   this->_e[1] = this->_e[0];
   return this->_u[0];
 }
-bool PID::reset()
+// Reset controller
+void PID::reset()
 {
   for(uint8_t i = 0; i < 3; i++){
     this->_e[i] = 0;
     this->_u[i] = 0;
   }
 }
+// Get sampling time
 double PID::getTs()
 {
   return this->_Ts;
 }
+// Get proportional gain
 double PID::getKp()
 {
   return this->_Kp;
 }
+// Get integral time constant
 double PID::getTaui()
 {
   return this->_tau_i;
 }
+// Get differential time constant
 double PID::getTaud()
 {
   return this->_tau_d;
 }
+// Get feedback coeffients
 double PID::getA(int idx)
 {
   if((idx >= 0) && (idx <= 2))
@@ -79,6 +93,7 @@ double PID::getA(int idx)
   else
     return OUT_OF_BOUNDS;
 }
+// Get feed forward coefficients
 double PID::getB(int idx)
 {
   if((idx >= 0) && (idx <= 2))
@@ -86,15 +101,46 @@ double PID::getB(int idx)
   else
     return OUT_OF_BOUNDS;
 }
-
-bool PID::test(float Ts = TS_DEF, float Kp = KP_DEF, float tau_i = TAU_I_DEF, float tau_d = TAU_D_DEF, float alpha = ALPHA_DEF, float lim = LIM_DEF, float e = E_DEF)
+// Test function with custom arguments
+void PID::test(float Ts, float Kp, float tau_i, float tau_d, float alpha, float lim, bool en_lim, float e)
 {
-  this->begin(Ts, Kp, tau_i, tau_d, alpha, lim);
+  this->begin(Ts, Kp, tau_i, tau_d, alpha, lim, en_lim);
   for(int i = 0; i < 10; i++)
   {
-    Serial.print("u = "); Serial.println(this->_u[0]);
+    Serial.print("u = "); Serial.println(this->_u[0],15);
     this->update(e, 0);
   }
+  this->reset();
+}
+// Test function using values already present in object
+void PID::test(float e)
+{
+  this->test(this->_Ts, this->_Kp, this->_tau_i, this->_tau_d, this->_alpha, this->_lim, this->_en_lim, e);
+}
+void PID::print()
+{
+  Serial.println("#######################################");
+  Serial.println("##       PID Controller - Summary    ##");
+  Serial.println("#######################################");
+  Serial.println("\n## Parameters: ");
+  Serial.print("Ts = ");     Serial.println(this->_Ts,9);
+  Serial.print("Kp = ");     Serial.println(this->_Kp,9);
+  Serial.print("tau_i = ");  Serial.println(this->_tau_i,9);
+  Serial.print("tau_d = ");  Serial.println(this->_tau_d,9);
+  Serial.print("alpha = ");  Serial.println(this->_alpha,9);
+  Serial.print("en_lim = "); Serial.println(this->_en_lim,9);
+  Serial.print("lim = ");    Serial.println(this->_lim,9);
+  Serial.println("\n## Transfer function: ");
+  Serial.print(this->_b[0],4); Serial.print(" + ");
+  Serial.print(this->_b[1],4); Serial.print("z^(-1) + ");
+  Serial.print(this->_b[2],4); Serial.print("z^(-2)");
+  Serial.println();
+  Serial.println("-------------------------------------");
+  Serial.print(this->_a[0],4); Serial.print(" + ");
+  Serial.print(this->_a[1],4); Serial.print("z^(-1) + ");
+  Serial.print(this->_a[2],4); Serial.print("z^(-2)");
+  Serial.println("\n");
+  Serial.println("#######################################");
 }
 /*
 float pictrl(float e, float Kp, float tau, float Ts){
