@@ -5,63 +5,96 @@ PID::PID()
 
 }
 
-void PID::begin(float Ts, float Kp, float tau_i, float tau_d, float alpha)
+void PID::begin(float Ts, float Kp, float tau_i, float tau_d, float alpha, float lim)
 {
-  this->Ts = Ts;
-  this->Kp = Kp;
-  this->tau_i = tau_i;
-  this->tau_d = tau_d;
-  this->b[0] =  0.5*Kp*(Ts + 2.0*tau_d)*(Ts + 2.0*tau_i);
-  this->b[1] = 0.5*Kp*(Ts - 2.0*tau_d)*(Ts + 2.0*tau_i) + 0.5*Kp*(Ts + 2.0*tau_d)*(Ts - 2.0*tau_i);
-  this->b[2] = 0.5*Kp*(Ts - 2.0*tau_d)*(Ts - 2.0*tau_i);
-  this->a[0] = tau_i*(Ts + 2.0*alpha*tau_d);
-  this->a[1] = tau_i*(Ts - 2.0*alpha*tau_d) - 1.0*tau_i*(Ts + 2.0*alpha*tau_d);
-  this->a[2] = -1.0*tau_i*(Ts - 2.0*alpha*tau_d);
-  this->e[0] = 0;
-  this->e[1] = 0;
-  this->e[2] = 0;
-  this->u[0] = 0;
-  this->u[1] = 0;
-  this->u[2] = 0;
+  this->_Ts = Ts;
+  this->_Kp = Kp;
+  this->_tau_i = tau_i;
+  this->_tau_d = tau_d;
+  this->_b[0] =  0.5*Kp*(Ts + 2.0*tau_d)*(Ts + 2.0*tau_i);
+  this->_b[1] = 0.5*Kp*(Ts - 2.0*tau_d)*(Ts + 2.0*tau_i) + 0.5*Kp*(Ts + 2.0*tau_d)*(Ts - 2.0*tau_i);
+  this->_b[2] = 0.5*Kp*(Ts - 2.0*tau_d)*(Ts - 2.0*tau_i);
+  this->_a[0] = tau_i*(Ts + 2.0*alpha*tau_d);
+  this->_a[1] = tau_i*(Ts - 2.0*alpha*tau_d) - 1.0*tau_i*(Ts + 2.0*alpha*tau_d);
+  this->_a[2] = -1.0*tau_i*(Ts - 2.0*alpha*tau_d);
+  this->_e[0] = 0;
+  this->_e[1] = 0;
+  this->_e[2] = 0;
+  this->_u[0] = 0;
+  this->_u[1] = 0;
+  this->_u[2] = 0;
+  this->_lim = lim;
+  if(lim < 0) {
+    this->_lim = fabs(this->_lim);
+  }
 }
-float  PID::update(float r, float e)
+float PID::update(float r, float m)
 {
-
+  // Calculate e(t)
+  this->_e[0] = r-m;
+  // Calculate u(t)
+  this->_u[0] = 1/this->_a[0]*(this->_b[0]*this->_e[0] + this->_b[1]*this->_e[1] + this->_b[2]*this->_e[2] - this->_a[1]*this->_u[1] - this->_a[2]*this->_u[2]);
+  // Clamp u(t)
+  if(this->_u[0] > this->_lim)
+  {
+    this->_u[0] = this->_lim;
+  }else if(this->_u[0] < -this->_lim)
+  {
+    this->_u[0] = -this->_lim;
+  }
+  // Update filter
+  this->_u[2] = this->_u[1];
+  this->_u[1] = this->_u[0];
+  this->_e[2] = this->_e[1];
+  this->_e[1] = this->_e[0];
+  return this->_u[0];
+}
+bool PID::reset()
+{
+  for(uint8_t i = 0; i < 3; i++){
+    this->_e[i] = 0;
+    this->_u[i] = 0;
+  }
 }
 double PID::getTs()
 {
-  return this->Ts;
+  return this->_Ts;
 }
 double PID::getKp()
 {
-  return this->Kp;
+  return this->_Kp;
 }
 double PID::getTaui()
 {
-  return this->tau_i;
+  return this->_tau_i;
 }
 double PID::getTaud()
 {
-  return this->tau_d;
+  return this->_tau_d;
 }
 double PID::getA(int idx)
 {
   if((idx >= 0) && (idx <= 2))
-    return this->a[idx];
+    return this->_a[idx];
   else
     return OUT_OF_BOUNDS;
 }
 double PID::getB(int idx)
 {
   if((idx >= 0) && (idx <= 2))
-    return this->b[idx];
+    return this->_b[idx];
   else
     return OUT_OF_BOUNDS;
 }
 
-bool PID::test(float Ts = TS_DEF, float Kp = KP_DEF, float tau_i = TAU_I_DEF, float tau_d = TAU_D_DEF, float alpha = ALPHA_DEF)
+bool PID::test(float Ts = TS_DEF, float Kp = KP_DEF, float tau_i = TAU_I_DEF, float tau_d = TAU_D_DEF, float alpha = ALPHA_DEF, float lim = LIM_DEF, float e = E_DEF)
 {
-  
+  this->begin(Ts, Kp, tau_i, tau_d, alpha, lim);
+  for(int i = 0; i < 10; i++)
+  {
+    Serial.print("u = "); Serial.println(this->_u[0]);
+    this->update(e, 0);
+  }
 }
 /*
 float pictrl(float e, float Kp, float tau, float Ts){
