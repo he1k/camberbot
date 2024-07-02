@@ -20,5 +20,10 @@ PPR_vel = PPR_motor*134;
 PPR_pos = 5120;
 CPR_vel = 4*PPR_vel;
 CPR_pos = 4*PPR_pos;
-% Wheel
-r_wheel 
+% MCU
+CLK_TEENSY = 600e6;
+CLK_ESP = 240e6;
+TS_TEENSY = 1/CLK_TEENSY;
+TS_ESP = 1/CLK_ESP;
+% Velocity servo
+TS_SERVO = 0.25e-3;
