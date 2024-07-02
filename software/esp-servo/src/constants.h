@@ -50,11 +50,26 @@
 //###############################
 //|          FILTER             |
 //###############################
-#define TAU_FILT 0.01
-#define A0_FILT 1
-#define A1_FILT (TS-2*TAU_FILT)/(TS+2*TAU_FILT)
-#define B0_FILT TS/(TS+2*TAU_FILT)
-#define B1_FILT TS/(TS+2*TAU_FILT)
+#define FILT_TYPE 0
+#if FILT_TYPE == 0 // Low pass filtered derivative (high pass filter with 1/tau DC gain)
+  #define TAU_FILT 0.01
+  #define A0_FILT 1
+  #define A1_FILT (TS-2*TAU_FILT)/(2*TAU_FILT+TS)
+  #define B0_FILT 2/(2*TAU_FILT+TS)
+  #define B1_FILT -2/(2*TAU_FILT+TS)
+#elif FILT_TYPE == 1 // High pass filter
+  #define TAU_FILT 10 
+  #define A0_FILT 1
+  #define A1_FILT (TS-2*TAU_FILT)/(2*TAU_FILT+TS)
+  #define B0_FILT 2*TAU_FILT/(2*TAU_FILT+TS)
+  #define B1_FILT -2*TAU_FILT/(2*TAU_FILT+TS)
+#elif FILT_TYPE == 2 // Low pass filter
+  #define TAU_FILT 0.01
+  #define A0_FILT 1
+  #define A1_FILT (TS-2*TAU_FILT)/(TS+2*TAU_FILT)
+  #define B0_FILT TS/(TS+2*TAU_FILT)
+  #define B1_FILT TS/(TS+2*TAU_FILT)
+#endif
 //###############################
 //|          ENCODER            |
 //###############################

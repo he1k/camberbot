@@ -1,6 +1,10 @@
 #ifndef FILTER_H
 #define FILTER_H
 #include <Arduino.h>
+typedef struct filter{
+    float b0, b1, a1; // Coefficients
+    float f1, f2;
+}
 #endif
 
 // float lpfilt(float u, float tau, float Ts){
@@ -16,3 +20,8 @@
 //   xp = x;
 //   return y;
 // }
+
+
+
+// f(i) = e(i) -(a_1*f(i-1)+a_2*f(i-2))
+// u(i) = b_0*f(i)+b_1*f(i-1)+b_2*f(i-2)
